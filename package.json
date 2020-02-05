@@ -1,0 +1,23 @@
+{
+  "name": "discourse-simple-theme",
+  "version": "1.0.0",
+  "description": "More info at: https://meta.discourse.org/t/sams-personal-minimal-topic-list-design/23552?u=sam",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zcuric/discourse-simple-theme.git"
+  },
+  "keywords": [],
+  "author": "Zdravko Ćurić",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zcuric/discourse-simple-theme/issues"
+  },
+  "homepage": "https://github.com/zcuric/discourse-simple-theme#readme",
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  }
+}

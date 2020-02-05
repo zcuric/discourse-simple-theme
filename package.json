@@ -4,7 +4,8 @@
   "description": "More info at: https://meta.discourse.org/t/sams-personal-minimal-topic-list-design/23552?u=sam",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "stylelint \"client/**/*.vue\" \"client/**/*.scss\""
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,8 @@
   },
   "homepage": "https://github.com/zcuric/discourse-simple-theme#readme",
   "devDependencies": {
-    "prettier": "^1.19.1"
+    "@extensionengine/stylelint-config": "^1.1.1",
+    "prettier": "^1.19.1",
+    "stylelint": "^13.0.0"
   }
 }

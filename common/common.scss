@@ -4,6 +4,11 @@
 }
 $primary-font: "Proxima Nova Regular", serif;
 
+.cepp-header {
+  background-color: white;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.25);
+}
+
 .cepp-header-wrapper {
   padding-top: 72px;
 
@@ -14,4 +19,8 @@ $primary-font: "Proxima Nova Regular", serif;
     justify-content: center;
     align-items: center;
   }
+}
+
+#main {
+  background-color: rgba(239, 239, 239, 0.5);
 }

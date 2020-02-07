@@ -1,15 +1,13 @@
+$primary-font: "Proxima Nova Regular", serif;
+
 .cepp-header-wrapper {
   padding-top: 72px;
 
   .title {
+    font-family: $primary-font;
     display: flex;
     height: 123px;
     justify-content: center;
     align-items: center;
-  }
-
-  .category-wrapper {
-    height: 240px;
-    background: #2e3a76;
   }
 }

@@ -6,8 +6,8 @@ import LoadMore from "discourse/mixins/load-more";
 import { on } from "@ember/object/evented";
 
 export default Component.extend(LoadMore, {
-  tagName: "ul",
-  classNames: ["topic-list"],
+  tagName: "div",
+  classNames: ["custom-topic-list"],
   showTopicPostBadges: true,
   listTitle: "topic.title",
 

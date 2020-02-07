@@ -24,3 +24,12 @@ $primary-font: "Proxima Nova Regular", serif;
 #main {
   background-color: rgba(239, 239, 239, 0.5);
 }
+
+.topic-list {
+  list-style: none;
+}
+
+.topi-list-item {
+  display: flex;
+  flex-direction: column;
+}

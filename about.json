@@ -1,3 +1,6 @@
 {
-  "name": "Zdravko's test theme"
+  "name": "Zdravko's test theme",
+  "assets": {
+    "proxima": "assets/ProximaNovaRegular.woff2"
+  }
 }

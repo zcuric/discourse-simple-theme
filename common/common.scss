@@ -1,3 +1,7 @@
+@font-face {
+  font-family: Proxima Nova Regular;
+  src: url($proxima) format("woff2");
+}
 $primary-font: "Proxima Nova Regular", serif;
 
 .cepp-header-wrapper {

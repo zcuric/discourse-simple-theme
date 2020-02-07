@@ -33,7 +33,7 @@ export function navigateToTopic(topic, href) {
 }
 
 export default Component.extend({
-  tagName: "tr",
+  tagName: "li",
   classNameBindings: [":topic-list-item", "unboundClassNames", "topic.visited"],
   attributeBindings: ["data-topic-id"],
   "data-topic-id": alias("topic.id"),
@@ -45,6 +45,8 @@ export default Component.extend({
 
   @observes("topic.pinned")
   renderTopicListItem() {
+    console.log(this);
+    console.log(this.topic);
     const template = findRawTemplate("list/topic-list-item");
     if (template) {
       this.set("topicListItemContents", template(this).htmlSafe());

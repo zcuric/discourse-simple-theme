@@ -1,246 +1,178 @@
-import discourseComputed, { observes } from "discourse-common/utils/decorators";
-import { alias } from "@ember/object/computed";
-import Component from "@ember/component";
+import { alias, reads } from "@ember/object/computed";
 import { schedule } from "@ember/runloop";
-import DiscourseURL from "discourse/lib/url";
-import { findRawTemplate } from "discourse/lib/raw-templates";
-import { wantsNewWindow } from "discourse/lib/intercept-click";
+import Component from "@ember/component";
+import discourseComputed, { observes } from "discourse-common/utils/decorators";
+import LoadMore from "discourse/mixins/load-more";
 import { on } from "@ember/object/evented";
 
-export function showEntrance(e) {
-  let target = $(e.target);
+export default Component.extend(LoadMore, {
+  tagName: "ul",
+  classNames: ["topic-list"],
+  showTopicPostBadges: true,
+  listTitle: "topic.title",
 
-  if (target.hasClass("posts-map") || target.parents(".posts-map").length > 0) {
-    if (target.prop("tagName") !== "A") {
-      target = target.find("a");
-      if (target.length === 0) {
-        target = target.end();
-      }
-    }
+  // Overwrite this to perform client side filtering of topics, if desired
+  filteredTopics: alias("topics"),
 
-    this.appEvents.trigger("topic-entrance:show", {
-      topic: this.topic,
-      position: target.offset()
-    });
-    return false;
-  }
-}
+  _init: on("init", function() {
+    this.addObserver("hideCategory", this.rerender);
+    this.addObserver("order", this.rerender);
+    this.addObserver("ascending", this.rerender);
+    this.refreshLastVisited();
+  }),
 
-export function navigateToTopic(topic, href) {
-  this.appEvents.trigger("header:update-topic", topic);
-  DiscourseURL.routeTo(href || topic.get("url"));
-  return false;
-}
-
-export default Component.extend({
-  tagName: "tr",
-  classNameBindings: [":topic-list-item", "unboundClassNames", "topic.visited"],
-  attributeBindings: ["data-topic-id"],
-  "data-topic-id": alias("topic.id"),
-
-  didReceiveAttrs() {
-    this._super(...arguments);
-    this.renderTopicListItem();
+  @discourseComputed("bulkSelectEnabled")
+  toggleInTitle(bulkSelectEnabled) {
+    return !bulkSelectEnabled && this.canBulkSelect;
   },
 
-  @observes("topic.pinned")
-  renderTopicListItem() {
-    const template = findRawTemplate("list/topic-list-item");
-    if (template) {
-      this.set("topicListItemContents", template(this).htmlSafe());
+  @discourseComputed
+  sortable() {
+    return !!this.changeSort;
+  },
+
+  skipHeader: reads("site.mobileView"),
+
+  @discourseComputed("order")
+  showLikes(order) {
+    return order === "likes";
+  },
+
+  @discourseComputed("order")
+  showOpLikes(order) {
+    return order === "op_likes";
+  },
+
+  @observes("topics.[]")
+  topicsAdded() {
+    // special case so we don't keep scanning huge lists
+    if (!this.lastVisitedTopic) {
+      this.refreshLastVisited();
+    }
+  },
+
+  @observes("topics", "order", "ascending", "category", "top")
+  lastVisitedTopicChanged() {
+    this.refreshLastVisited();
+  },
+
+  scrolled() {
+    this._super(...arguments);
+    let onScroll = this.onScroll;
+    if (!onScroll) return;
+
+    onScroll.call(this);
+  },
+
+  scrollToLastPosition() {
+    if (!this.scrollOnLoad) return;
+
+    let scrollTo = this.session.get("topicListScrollPosition");
+    if (scrollTo && scrollTo >= 0) {
+      schedule("afterRender", () => $(window).scrollTop(scrollTo + 1));
     }
   },
 
   didInsertElement() {
     this._super(...arguments);
-
-    if (this.includeUnreadIndicator) {
-      this.messageBus.subscribe(this.unreadIndicatorChannel, data => {
-        const nodeClassList = document.querySelector(
-          `.indicator-topic-${data.topic_id}`
-        ).classList;
-
-        if (data.show_indicator) {
-          nodeClassList.remove("read");
-        } else {
-          nodeClassList.add("read");
-        }
-      });
-    }
+    this.scrollToLastPosition();
   },
 
-  willDestroyElement() {
-    this._super(...arguments);
+  _updateLastVisitedTopic(topics, order, ascending, top) {
+    this.set("lastVisitedTopic", null);
 
-    if (this.includeUnreadIndicator) {
-      this.messageBus.unsubscribe(this.unreadIndicatorChannel);
-    }
-  },
-
-  @discourseComputed("topic.id")
-  unreadIndicatorChannel(topicId) {
-    return `/private-messages/unread-indicator/${topicId}`;
-  },
-
-  @discourseComputed("topic.unread_by_group_member")
-  unreadClass(unreadByGroupMember) {
-    return unreadByGroupMember ? "" : "read";
-  },
-
-  @discourseComputed("topic.unread_by_group_member")
-  includeUnreadIndicator(unreadByGroupMember) {
-    return typeof unreadByGroupMember !== "undefined";
-  },
-
-  @discourseComputed
-  newDotText() {
-    return this.currentUser && this.currentUser.trust_level > 0
-      ? ""
-      : I18n.t("filters.new.lower_title");
-  },
-
-  @discourseComputed("topic", "lastVisitedTopic")
-  unboundClassNames(topic, lastVisitedTopic) {
-    let classes = [];
-
-    if (topic.get("category")) {
-      classes.push("category-" + topic.get("category.fullSlug"));
+    if (!this.highlightLastVisited) {
+      return;
     }
 
-    if (topic.get("tags")) {
-      topic.get("tags").forEach(tagName => classes.push("tag-" + tagName));
+    if (order !== "default" && order !== "activity") {
+      return;
     }
 
-    if (topic.get("hasExcerpt")) {
-      classes.push("has-excerpt");
+    if (top) {
+      return;
     }
 
-    if (topic.get("unseen")) {
-      classes.push("unseen-topic");
+    if (!topics || topics.length === 1) {
+      return;
     }
 
-    if (topic.get("displayNewPosts")) {
-      classes.push("new-posts");
+    if (ascending) {
+      return;
     }
 
-    ["liked", "archived", "bookmarked", "pinned", "closed"].forEach(name => {
-      if (topic.get(name)) {
-        classes.push(name);
+    let user = this.currentUser;
+    if (!user || !user.previous_visit_at) {
+      return;
+    }
+
+    let lastVisitedTopic, topic;
+
+    let prevVisit = user.get("previousVisitAt");
+
+    // this is more efficient cause we keep appending to list
+    // work backwards
+    let start = 0;
+    while (topics[start] && topics[start].get("pinned")) {
+      start++;
+    }
+
+    let i;
+    for (i = topics.length - 1; i >= start; i--) {
+      if (topics[i].get("bumpedAt") > prevVisit) {
+        lastVisitedTopic = topics[i];
+        break;
       }
-    });
-
-    if (topic === lastVisitedTopic) {
-      classes.push("last-visit");
+      topic = topics[i];
     }
 
-    return classes.join(" ");
+    if (!lastVisitedTopic || !topic) {
+      return;
+    }
+
+    // end of list that was scanned
+    if (topic.get("bumpedAt") > prevVisit) {
+      return;
+    }
+
+    this.set("lastVisitedTopic", lastVisitedTopic);
   },
 
-  hasLikes: function() {
-    return this.get("topic.like_count") > 0;
+  refreshLastVisited() {
+    this._updateLastVisitedTopic(
+      this.topics,
+      this.order,
+      this.ascending,
+      this.top
+    );
   },
-
-  hasOpLikes: function() {
-    return this.get("topic.op_like_count") > 0;
-  },
-
-  @discourseComputed
-  expandPinned: function() {
-    const pinned = this.get("topic.pinned");
-    if (!pinned) {
-      return false;
-    }
-
-    if (this.site.mobileView) {
-      if (!this.siteSettings.show_pinned_excerpt_mobile) {
-        return false;
-      }
-    } else {
-      if (!this.siteSettings.show_pinned_excerpt_desktop) {
-        return false;
-      }
-    }
-
-    if (this.expandGloballyPinned && this.get("topic.pinned_globally")) {
-      return true;
-    }
-
-    if (this.expandAllPinned) {
-      return true;
-    }
-
-    return false;
-  },
-
-  showEntrance,
 
   click(e) {
-    const result = this.showEntrance(e);
-    if (result === false) {
-      return result;
-    }
+    var self = this;
+    var onClick = function(sel, callback) {
+      var target = $(e.target).closest(sel);
 
-    const topic = this.topic;
-    const target = $(e.target);
-    if (target.hasClass("bulk-select")) {
-      const selected = this.selected;
-
-      if (target.is(":checked")) {
-        selected.addObject(topic);
-      } else {
-        selected.removeObject(topic);
+      if (target.length === 1) {
+        callback.apply(self, [target]);
       }
-    }
+    };
 
-    if (target.hasClass("raw-topic-link")) {
-      if (wantsNewWindow(e)) {
-        return true;
-      }
-      return this.navigateToTopic(topic, target.attr("href"));
-    }
-
-    if (target.closest("a.topic-status").length === 1) {
-      this.topic.togglePinnedForUser();
-      return false;
-    }
-
-    return this.unhandledRowClick(e, topic);
-  },
-
-  actions: {
-    toggleBookmark() {
-      this.topic.toggleBookmark().finally(() => this.renderTopicListItem());
-    }
-  },
-
-  unhandledRowClick() {},
-
-  navigateToTopic,
-
-  highlight(opts = { isLastViewedTopic: false }) {
-    schedule("afterRender", () => {
-      if (!this.element || this.isDestroying || this.isDestroyed) {
-        return;
-      }
-
-      const $topic = $(this.element);
-      $topic
-        .addClass("highlighted")
-        .attr("data-islastviewedtopic", opts.isLastViewedTopic);
-
-      $topic.on("animationend", () => $topic.removeClass("highlighted"));
+    onClick("button.bulk-select", function() {
+      this.toggleBulkSelect();
+      this.rerender();
     });
-  },
 
-  _highlightIfNeeded: on("didInsertElement", function() {
-    // highlight the last topic viewed
-    if (this.session.get("lastTopicIdViewed") === this.get("topic.id")) {
-      this.session.set("lastTopicIdViewed", null);
-      this.highlight({ isLastViewedTopic: true });
-    } else if (this.get("topic.highlight")) {
-      // highlight new topics that have been loaded from the server or the one we just created
-      this.set("topic.highlight", false);
-      this.highlight();
-    }
-  })
+    onClick("button.bulk-select-all", function() {
+      $("input.bulk-select:not(:checked)").click();
+    });
+
+    onClick("button.bulk-clear-all", function() {
+      $("input.bulk-select:checked").click();
+    });
+
+    onClick("th.sortable", function(e2) {
+      this.changeSort(e2.data("sort-order"));
+      this.rerender();
+    });
+  }
 });

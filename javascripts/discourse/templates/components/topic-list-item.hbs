@@ -1,3 +1,6 @@
 <div>
-  {{ topic.title }}
+  {{~topic-link topic class="raw-link raw-topic-link"}}
+  {{topic.post_count}}
+  {{topic.views}}
+  {{~format-date topic.createdAt format="MM-DD-YYYY" noTitle="true"~}}
 </div>

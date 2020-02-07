@@ -45,8 +45,6 @@ export default Component.extend({
 
   @observes("topic.pinned")
   renderTopicListItem() {
-    console.log(this);
-    console.log(this.topic);
     const template = findRawTemplate("list/topic-list-item");
     if (template) {
       this.set("topicListItemContents", template(this).htmlSafe());

@@ -1,3 +1,9 @@
-<div>
-
+{{~topic-link topic class="raw-link raw-topic-link"}}
+{{!-- <div class="topic-details">
+  <div>{{topic.tags[0]}}</div>
+</div> --}}
+<div class="topic-meta">
+  {{topic.post_count}}
+  {{topic.views}}
+  {{~format-date topic.createdAt format="medium" noTitle="true"~}}
 </div>
